@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>微信小游戏-贪吃蛇</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            touch-action: none;
+        }
+        #gameCanvas {
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #score {
+            position: fixed;
+            top: 20px;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">得分: 0</div>
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreElement = document.getElementById('score');
+
+// 设置画布尺寸
+function resizeCanvas() {
+    canvas.width = Math.min(window.innerWidth - 20, 400);
+    canvas.height = Math.min(window.innerHeight - 100, 600);
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// 游戏参数
+const gridSize = 20;
+let snake = [{x: 5, y: 5}];
+let food = {x: 15, y: 15};
+let direction = 'right';
+let score = 0;
+let gameLoop;
+
+// 生成食物
+function generateFood() {
+    food.x = Math.floor(Math.random() * (canvas.width/gridSize));
+    food.y = Math.floor(Math.random() * (canvas.height/gridSize));
+}
+
+// 游戏主循环
+function update() {
+    // 移动蛇头
+    const head = {...snake[0]};
+    switch(direction) {
+        case 'up': head.y--; break;
+        case 'down': head.y++; break;
+        case 'left': head.x--; break;
+        case 'right': head.x++; break;
+    }
+
+    // 碰撞检测
+    if (head.x < 0 || head.x >= canvas.width/gridSize ||
+        head.y < 0 || head.y >= canvas.height/gridSize ||
+        snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+        clearInterval(gameLoop);
+        alert('游戏结束！得分：' + score);
+        location.reload();
+        return;
+    }
+
+    snake.unshift(head);
+
+    // 吃食物检测
+    if (head.x === food.x && head.y === food.y) {
+        score += 10;
+        scoreElement.textContent = '得分: ' + score;
+        generateFood();
+    } else {
+        snake.pop();
+    }
+
+    // 绘制
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // 画蛇
+    ctx.fillStyle = '#4CAF50';
+    snake.forEach(segment => {
+        ctx.fillRect(
+            segment.x * gridSize,
+            segment.y * gridSize,
+            gridSize - 2,
+            gridSize - 2
+        );
+    });
+
+    // 画食物
+    ctx.fillStyle = '#FF5722';
+    ctx.fillRect(
+        food.x * gridSize,
+        food.y * gridSize,
+        gridSize - 2,
+        gridSize - 2
+    );
+}
+
+// 触控操作
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    e.preventDefault();
+});
+
+canvas.addEventListener('touchmove', e => {
+    const touchEndX = e.touches[0].clientX;
+    const touchEndY = e.touches[0].clientY;
+    const dx = touchEndX - touchStartX;
+    const dy = touchEndY - touchStartY;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+        direction = dx > 0 ? 'right' : 'left';
+    } else {
+        direction = dy > 0 ? 'down' : 'up';
+    }
+    e.preventDefault();
+});
+
+// 键盘操作
+document.addEventListener('keydown', e => {
+    switch(e.key) {
+        case 'ArrowUp': if (direction !== 'down') direction = 'up'; break;
+        case 'ArrowDown': if (direction !== 'up') direction = 'down'; break;
+        case 'ArrowLeft': if (direction !== 'right') direction = 'left'; break;
+        case 'ArrowRight': if (direction !== 'left') direction = 'right'; break;
+    }
+});
+
+// 开始游戏
+gameLoop = setInterval(update, 150);
+</script>
+</body>
+</html>
